@@ -5,7 +5,6 @@ import { dbUrl } from '../config';
 
 const pgClient = new Client({
     connectionString: dbUrl, // Railway's full connection URL
-    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false, // Required for Railway
   });
   
   pgClient
