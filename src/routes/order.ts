@@ -8,9 +8,7 @@ orderRouter.post("/", async (req, res) => { //User makes a Request Here
     const { market, price, quantity, side, userId } = req.body;
     console.log("req.body: ", req.body);
     console.log({ market, price, quantity, side, userId })
-    //TODO: can u make the type of the response object right? Right now it is a union.
     const response = await RedisManager.getInstance().sendAndAwait({ //Sending it to Queue and then waiting for the 
-        //Answer from the Pub-Sub
         type: CREATE_ORDER,
         data: {
             market,

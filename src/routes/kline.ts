@@ -1,6 +1,5 @@
-import { Client } from 'pg';
 import { Router } from "express";
-import { RedisManager } from "../RedisManager";
+import { Client } from 'pg';
 import { dbUrl } from '../config';
 
 const pgClient = new Client({
