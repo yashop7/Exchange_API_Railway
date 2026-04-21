@@ -10,6 +10,9 @@ import * as cron from 'node-cron';
 
 const PORT = process.env.PORT || 3003;
 const app = express();
+// Railway (and most PaaS) sit behind a reverse proxy — trust one hop so
+// express-rate-limit can read the real client IP from X-Forwarded-For
+app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
 
