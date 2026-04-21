@@ -1,53 +1,60 @@
 import { Router } from "express";
-import { Client } from 'pg';
+import { Pool } from 'pg';
 import { dbUrl } from '../config';
 
-const pgClient = new Client({
-    connectionString: dbUrl, // Railway's full connection URL
-  });
-  
-  pgClient
-    .connect()
+const pgPool = new Pool({ connectionString: dbUrl });
+
+pgPool.connect()
     .then(() => console.log("🚀 Connected to Railway PostgreSQL!"))
     .catch((err) => console.error("❌ Connection error", err));
 
 export const klineRouter = Router();
 
 klineRouter.get("/", async (req, res) => {
-    console.log("Fetching kline data...");
     const { market, interval, startTime, endTime } = req.query;
 
-    let query;
-    switch (interval) {
-        case '1m':
-            query = `SELECT * FROM klines_1m WHERE bucket >= $1 AND bucket <= $2`;
-            break;
-        case '1h':
-            query = `SELECT * FROM klines_1h WHERE  bucket >= $1 AND bucket <= $2`;
-            break;
-        case '1w':
-            query = `SELECT * FROM klines_1w WHERE bucket >= $1 AND bucket <= $2`;
-            break;
-        default:
-            return res.status(400).send('Invalid interval');
+    if (!market || typeof market !== 'string') {
+        return res.status(400).json({ error: 'market is required' });
+    }
+    if (!startTime || !endTime || isNaN(Number(startTime)) || isNaN(Number(endTime))) {
+        return res.status(400).json({ error: 'startTime and endTime must be valid unix timestamps' });
     }
 
+    let table: string;
+    switch (interval) {
+        case '1m': table = 'klines_1m'; break;
+        case '1h': table = 'klines_1h'; break;
+        case '1w': table = 'klines_1w'; break;
+        default:
+            return res.status(400).json({ error: 'interval must be 1m, 1h, or 1w' });
+    }
+
+    // currency_code is null for legacy rows — treat null as TATA_INR
+    const query = `
+        SELECT * FROM ${table}
+        WHERE COALESCE(currency_code, 'TATA_INR') = $1
+          AND bucket >= $2
+          AND bucket <= $3
+        ORDER BY bucket ASC
+    `;
+    const start = new Date(Number(startTime) * 1000);
+    const end = new Date(Number(endTime) * 1000);
+
     try {
-        //@ts-ignore
-        const result = await pgClient.query(query, [new Date(startTime * 1000 as string), new Date(endTime * 1000 as string)]);
+        const result = await pgPool.query(query, [market, start, end]);
         res.json(result.rows.map(x => ({
-            close: x.close,
-            end: x.bucket,
-            high: x.high,
-            low: x.low,
-            open: x.open,
-            quoteVolume: x.quoteVolume,
-            start: x.start,
-            trades: x.trades,
-            volume: x.volume,
+            open:        x.open,
+            high:        x.high,
+            low:         x.low,
+            close:       x.close,
+            volume:      x.volume,
+            start:       x.bucket,
+            end:         x.bucket,
+            quoteVolume: null,
+            trades:      null,
         })));
-    } catch (err) {
-        console.log(err);
-        res.status(500).send(err);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
     }
 });

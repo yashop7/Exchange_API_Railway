@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "npx tsc -b",
-    "start": "npm run build && node dist/index.js",
-    "dev": "npm run start"
+    "build": "bunx tsc -b",
+    "start": "bunx tsc -b && node dist/index.js",
+    "dev": "bun run start"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +20,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.3.2",
     "node-cron": "^3.0.3",
     "pg": "^8.12.0",
     "pusher-js": "^8.4.0",
